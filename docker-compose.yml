@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  db:
+    image: mysql:8.3                  # or any 8.x you prefer
+    container_name: mysql
+    restart: always
+    environment:
+      # root account (use strong pw in prod)
+      MYSQL_ROOT_PASSWORD: password
+      # an app-level DB + user the app can connect with
+      MYSQL_DATABASE: org_chart
+      MYSQL_USER: org
+      MYSQL_PASSWORD: password
+    ports:
+      - "3307:3306"                   # host:container
+    volumes:
+      - mysql_data:/var/lib/mysql
+      # every *.sql in this dir runs exactly once at first boot
+      - ./scripts:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-ppassword"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  app:
+    build: .
+    container_name: drogon_app
+    ports:
+      - "3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - .:/app
+      - /app/build
+    environment:
+      - DB_HOST=db
+      - DB_PORT=3306
+      - DB_USER=org
+      - DB_PASSWORD=password
+      - DB_NAME=org_chart
+      # optional hint for many frameworks/ORMS
+      - DB_DRIVER=mysql
+    working_dir: /app/build
+    command: ["./org_chart"]
+
+volumes:
+  mysql_data:

@@ -11,6 +11,7 @@
 #include <drogon/orm/Field.h>
 #include <drogon/orm/SqlBinder.h>
 #include <drogon/orm/Mapper.h>
+#include <drogon/orm/BaseBuilder.h>
 #ifdef __cpp_impl_coroutine
 #include <drogon/orm/CoroMapper.h>
 #endif
@@ -18,6 +19,7 @@
 #include <trantor/utils/Logger.h>
 #include <json/json.h>
 #include <string>
+#include <string_view>
 #include <memory>
 #include <vector>
 #include <tuple>
@@ -47,11 +49,11 @@ class Department
         static const std::string _name;
     };
 
-    const static int primaryKeyNumber;
-    const static std::string tableName;
-    const static bool hasPrimaryKey;
-    const static std::string primaryKeyName;
-    using PrimaryKeyType = int32_t;
+    static const int primaryKeyNumber;
+    static const std::string tableName;
+    static const bool hasPrimaryKey;
+    static const std::string primaryKeyName;
+    using PrimaryKeyType = uint64_t;
     const PrimaryKeyType &getPrimaryKey() const;
 
     /**
@@ -98,11 +100,11 @@ class Department
 
     /**  For column id  */
     ///Get the value of the column id, returns the default value if the column is null
-    const int32_t &getValueOfId() const noexcept;
+    const uint64_t &getValueOfId() const noexcept;
     ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
-    const std::shared_ptr<int32_t> &getId() const noexcept;
+    const std::shared_ptr<uint64_t> &getId() const noexcept;
     ///Set the value of the column id
-    void setId(const int32_t &pId) noexcept;
+    void setId(const uint64_t &pId) noexcept;
 
     /**  For column name  */
     ///Get the value of the column name, returns the default value if the column is null
@@ -118,13 +120,19 @@ class Department
     static const std::string &getColumnName(size_t index) noexcept(false);
 
     Json::Value toJson() const;
+    std::string toString() const;
     Json::Value toMasqueradedJson(const std::vector<std::string> &pMasqueradingVector) const;
     /// Relationship interfaces
+    std::vector<Person> getPersons(const drogon::orm::DbClientPtr &clientPtr) const;
     void getPersons(const drogon::orm::DbClientPtr &clientPtr,
                     const std::function<void(std::vector<Person>)> &rcb,
                     const drogon::orm::ExceptionCallback &ecb) const;
   private:
     friend drogon::orm::Mapper<Department>;
+    friend drogon::orm::BaseBuilder<Department, true, true>;
+    friend drogon::orm::BaseBuilder<Department, true, false>;
+    friend drogon::orm::BaseBuilder<Department, false, true>;
+    friend drogon::orm::BaseBuilder<Department, false, false>;
 #ifdef __cpp_impl_coroutine
     friend drogon::orm::CoroMapper<Department>;
 #endif
@@ -134,7 +142,7 @@ class Department
     void updateArgs(drogon::orm::internal::SqlBinder &binder) const;
     ///For mysql or sqlite3
     void updateId(const uint64_t id);
-    std::shared_ptr<int32_t> id_;
+    std::shared_ptr<uint64_t> id_;
     std::shared_ptr<std::string> name_;
     struct MetaData
     {
@@ -151,13 +159,13 @@ class Department
   public:
     static const std::string &sqlForFindingByPrimaryKey()
     {
-        static const std::string sql="select * from " + tableName + " where id = $1";
+        static const std::string sql="select * from " + tableName + " where id = ?";
         return sql;
     }
 
     static const std::string &sqlForDeletingByPrimaryKey()
     {
-        static const std::string sql="delete from " + tableName + " where id = $1";
+        static const std::string sql="delete from " + tableName + " where id = ?";
         return sql;
     }
     std::string sqlForInserting(bool &needSelection) const
@@ -181,27 +189,17 @@ class Department
         else
             sql += ") values (";
 
-        int placeholder=1;
-        char placeholderStr[64];
-        size_t n=0;
         sql +="default,";
         if(dirtyFlag_[1])
         {
-            n = sprintf(placeholderStr,"$%d,",placeholder++);
-            sql.append(placeholderStr, n);
+            sql.append("?,");
+
         }
         if(parametersCount > 0)
         {
             sql.resize(sql.length() - 1);
         }
-        if(needSelection)
-        {
-            sql.append(") returning *");
-        }
-        else
-        {
-            sql.append(1, ')');
-        }
+        sql.append(1, ')');
         LOG_TRACE << sql;
         return sql;
     }

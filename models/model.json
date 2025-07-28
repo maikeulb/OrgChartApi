@@ -1,24 +1,10 @@
 {
-    //rdbms: server type, postgresql,mysql or sqlite3
-    "rdbms": "postgresql",
-    //filename: sqlite3 db file name
-    //"filename":"",
-    //host: server address,localhost by default;
-    "host": "127.0.0.1",
-    //port: server port, 5432 by default;
-    "port": 5433,
-    //dbname: Database name;
+    "rdbms": "mysql",              
+    "host": "127.0.0.1",                  
+    "port": 3306,
     "dbname": "org_chart",
-    //schema: valid for postgreSQL, "public" by default;
-    "schema": "public",
-    //user: User name
-    "user": "postgres",
-    //password or passwd: Password
+    "user": "org",
     "password": "password",
-    //client_encoding: The character set used by drogon_ctl. it is empty string by default which
-    //means use the default character set.
-    //"client_encoding": "",
-    //table: An array of tables to be modelized. if the array is empty, all revealed tables are modelized.
     "tables": [],
     "relationships": {
         "enabled": true,
@@ -53,7 +39,6 @@
                 "target_key": "manager_id",
                 "enable_reverse": false
             }
-
         ]
     }
 }
